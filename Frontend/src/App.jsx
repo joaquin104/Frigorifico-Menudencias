@@ -5,37 +5,28 @@ export default function App() {
 
 const [vistaActual, setVistaActual] = useState('inicio');
 
-const [listaCortes, setListaCortes] = useState(() => {
-    const cortesGuardados = localStorage.getItem('cortes_memoria')
-    // Si hay datos guardados, los convertimos a lista. Si no, arrancamos con array vacío []
-    return cortesGuardados ? JSON.parse(cortesGuardados) : []
-  })
-
+const [listaCortes, setListaCortes] = useState([]);
 
 const [nombreCorte, setNombreCorte] = useState('');
 const [precio, setPrecio] = useState('');
 const [stock, setStock] = useState('');
 
-useEffect(() => {
+/*useEffect(() => {
     // Convierte el array a texto y lo guarda en el navegador
     localStorage.setItem('cortes_memoria', JSON.stringify(listaCortes))
   }, [listaCortes]) // El array de dependencias indica que solo se ejecuta cuando listaCortes cambia
-//Guardamos todos en esta constate para que se ejecute todo a la vez
+//Guardamos todos en esta constate para que se ejecute todo a la vez*/
 
-const guardarProducto = (e) => {
+const guardarProducto = async (e) => {
   e.preventDefault() 
 
-  // 1. VALIDAR (Tenías este bloque repetido dos veces, dejá solo este)
+  //VALIDAMOS
   if (!nombreCorte || !precio || !stock) {
     alert("Error: Todos los campos son obligatorios")
-    return
+    return;
   }
 
-if (!nombreCorte || !precio || !stock) {
-  alert("Error: Todos los campos son obligatorios");
-  return
-};
-
+  //ARMAMOS
 const nuevoProducto = {
   id: Date.now(), //generam0os un id unico
   nombre: nombreCorte,
@@ -43,18 +34,38 @@ const nuevoProducto = {
   stock: parseInt(stock),
 }
 
-setListaCortes([...listaCortes, nuevoProducto])
+try {
+    const respuesta = await fetch("http://localhost:5079/api/Cortes", {
+      method: "POST", //Le decimos que vamos a enviar datos
+      headers: {
+        "Content-Type": "application/json" // Le avisamos que mandamos formato JSON
+      },
+      // Aca 'nuevoCorte' tiene que ser el objeto de React que armaste con nombre, precio y stock
+      body: JSON.stringify(nuevoProducto)
+    });
+    if (respuesta.ok) {
+      console.log("Corte enviado con exito al Backend!");
+      //Aca podemos limpiar los campos del formulario
+      setListaCortes([...listaCortes, nuevoProducto])
 /*Esta linea utiliza una característica de JavaScript llamada Spread Operator (el operador de propagación, representado por los tres puntos ...).
 En lenguaje coloquial, esa línea le dice a React: "Creá una lista nueva, volcá adentro todo lo que ya teníamos guardado, y meté este producto nuevo al final".*/
-
-    setNombreCorte('')
-    setPrecio('')
-    setStock('')
-//limpieza
+      setNombreCorte('')
+      setPrecio('')
+      setStock('')
+//li mpieza
 //objeto del nuevo producto
+    } else {
+      console.error("Hubo un error al guardar el corte.")
+    }
+  } catch (error) {
+    console.error("Error: Hubo un error de conexion con la API: ", error);
+  }
+};
 
 
-}
+
+
+
 /*const validarDatos() {
 
 }*/
