@@ -48,6 +48,24 @@ builderApp.MapPost("/api/cortes", async (Corte nuevoCorte) =>
     }
 });
 
+builderApp.MapGet("/api/cortes", async () =>
+{
+    var lista = new List<object>();
+    using (var conexion = new NpgsqlConnection(connectionString))
+    {
+        await conexion.OpenAsync();
+        using (var comando = new NpgsqlCommand("SELECT id, nombre, precio, stock FROM cortes", conexion))
+        using (var reader = await comando.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                lista.Add(new { id = reader.GetInt32(0), nombre = reader.GetString(1), precio = reader.GetDecimal(2), stock = reader.GetInt32(3) });
+            }
+        }
+    }
+    return Results.Ok(lista);
+});
+
 builderApp.Run();
 
 // Definición simple del modelo de datos para recibir el JSON

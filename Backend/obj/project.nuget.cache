@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "7bpJP341FqA=",
+  "dgSpecHash": "AJ4dmvcNW60=",
   "success": true,
-  "projectFilePath": "C:\\Users\\joaki\\Frigorifico Menudencias Web\\Backend\\Backend.csproj",
+  "projectFilePath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\joaki\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.7\\microsoft.aspnetcore.openapi.10.0.7.nupkg.sha512",
     "C:\\Users\\joaki\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
@@ -13,9 +13,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
-      "projectPath": "C:\\Users\\joaki\\Frigorifico Menudencias Web\\Backend\\Backend.csproj",
+      "projectPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
       "warningLevel": 1,
-      "filePath": "C:\\Users\\joaki\\Frigorifico Menudencias Web\\Backend\\Backend.csproj",
+      "filePath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
       "libraryId": "Microsoft.OpenApi",
       "targetGraphs": [
         "net10.0"

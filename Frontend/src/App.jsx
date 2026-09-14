@@ -6,6 +6,7 @@ export default function App() {
 const [vistaActual, setVistaActual] = useState('inicio');
 
 const [listaCortes, setListaCortes] = useState([]);
+const [guardando, setGuardando] = useState(false);
 
 const [nombreCorte, setNombreCorte] = useState('');
 const [precio, setPrecio] = useState('');
@@ -16,7 +17,21 @@ const [stock, setStock] = useState('');
     localStorage.setItem('cortes_memoria', JSON.stringify(listaCortes))
   }, [listaCortes]) // El array de dependencias indica que solo se ejecuta cuando listaCortes cambia
 //Guardamos todos en esta constate para que se ejecute todo a la vez*/
+useEffect(() => {
+  const cargarCatalogo = async () => {
+    try {
+      const respuesta = await fetch("http://localhost:5079/api/cortes");
+      if (respuesta.ok) {
+        const datos = await respuesta.json();
+        setListaCortes(datos); // Mete los datos de la base de datos en la pantalla
+      }
+    } catch (error) {
+      console.error("Error al cargar el catálogo:", error);
+    }
+  };
 
+  cargarCatalogo(); // Ejecutamos la función
+}, []); // 👈 Estos corchetes vacíos son vitales: le dicen a React que lo haga UNA SOLA VEZ al iniciar.
 const guardarProducto = async (e) => {
   e.preventDefault() 
 
@@ -33,6 +48,7 @@ const nuevoProducto = {
   precio: parseFloat(precio),
   stock: parseInt(stock),
 }
+setGuardando(true); //bloqueamos el boton
 
 try {
     const respuesta = await fetch("http://localhost:5079/api/Cortes", {
@@ -59,7 +75,9 @@ En lenguaje coloquial, esa línea le dice a React: "Creá una lista nueva, volc�
     }
   } catch (error) {
     console.error("Error: Hubo un error de conexion con la API: ", error);
-  }
+  } finally {
+  setGuardando(false); //DESBLOQUEAMOS EL BOTÓN (falle o tenga éxito)
+}
 };
 
 
