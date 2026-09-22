@@ -121,11 +121,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
+      "projectUniqueName": "C:\\Users\\joaki\\OneDrive\\Documentos\\Proyecto Menudencias Web\\Frigorifico Menudencias Web\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
       "projectName": "Backend",
-      "projectPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
+      "projectPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Proyecto Menudencias Web\\Frigorifico Menudencias Web\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
       "packagesPath": "C:\\Users\\joaki\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\obj\\",
+      "outputPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Proyecto Menudencias Web\\Frigorifico Menudencias Web\\Frigorifico-Menudencias\\Backend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\joaki\\AppData\\Roaming\\NuGet\\NuGet.Config",

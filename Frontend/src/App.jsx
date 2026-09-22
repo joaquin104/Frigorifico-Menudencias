@@ -11,12 +11,9 @@ const [guardando, setGuardando] = useState(false);
 const [nombreCorte, setNombreCorte] = useState('');
 const [precio, setPrecio] = useState('');
 const [stock, setStock] = useState('');
+const [idEnEdicion, setIdEnEdicion] = useState(null);
+const [datosEdicion, setDatosEdicion] = useState({ nombre: '', precio: 0, stock: 0 });
 
-/*useEffect(() => {
-    // Convierte el array a texto y lo guarda en el navegador
-    localStorage.setItem('cortes_memoria', JSON.stringify(listaCortes))
-  }, [listaCortes]) // El array de dependencias indica que solo se ejecuta cuando listaCortes cambia
-//Guardamos todos en esta constate para que se ejecute todo a la vez*/
 useEffect(() => {
   const cargarCatalogo = async () => {
     try {
@@ -43,7 +40,6 @@ const guardarProducto = async (e) => {
 
   //ARMAMOS
 const nuevoProducto = {
-  id: Date.now(), //generam0os un id unico
   nombre: nombreCorte,
   precio: parseFloat(precio),
   stock: parseInt(stock),
@@ -51,7 +47,7 @@ const nuevoProducto = {
 setGuardando(true); //bloqueamos el boton
 
 try {
-    const respuesta = await fetch("http://localhost:5079/api/Cortes", {
+    const respuesta = await fetch("http://localhost:5079/api/cortes", {
       method: "POST", //Le decimos que vamos a enviar datos
       headers: {
         "Content-Type": "application/json" // Le avisamos que mandamos formato JSON
@@ -80,7 +76,62 @@ En lenguaje coloquial, esa línea le dice a React: "Creá una lista nueva, volc�
 }
 };
 
+const eliminarCorte = async (id) => {
+    // Preguntamos por las dudas antes de borrar
+    if (!window.confirm("¿Estás seguro de que querés eliminar este corte?")) return;
 
+    try {
+        const respuesta = await fetch(`http://localhost:5079/api/cortes/${id}`, {
+            method: 'DELETE',
+        });
+
+        if (respuesta.ok) {
+            // CORRECCIÓN: Usamos las variables reales de tu estado (setListaCortes y listaCortes)
+            setListaCortes(listaCortes.filter(corte => corte.id !== id));
+            console.log("Corte eliminado con éxito");
+        } else {
+            console.error("Error al eliminar el corte en la base de datos");
+        }
+    } catch (error) {
+        console.error("Error de conexión con el servidor:", error);
+    }
+};
+
+const guardarEdicion = async (id) => {
+    try {
+        // 1. Enviamos los datos actualizados a C#
+        const respuesta = await fetch(`http://localhost:5079/api/cortes/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosEdicion)
+        });
+
+        if (respuesta.ok) {
+            // 2. Actualizamos la lista visualmente buscando el ID que cambió
+            const listaActualizada = listaCortes.map(corte => 
+                corte.id === id ? { ...corte, ...datosEdicion } : corte
+            );
+            setListaCortes(listaActualizada);
+            
+            // 3. Cerramos el modo edición
+            setIdEnEdicion(null);
+            console.log("Corte actualizado con éxito");
+        } else {
+            console.error("Error al intentar actualizar el corte");
+        }
+    } catch (error) {
+        console.error("Error de conexión con el servidor:", error);
+    }
+};
+
+const iniciarEdicion = (corte) => {
+    // 1. Le decimos a React qué ID se va a editar
+    setIdEnEdicion(corte.id);
+    // 2. Precargamos los datos actuales del corte en nuestra memoria temporal para que los casilleros no aparezcan vacíos
+    setDatosEdicion({ nombre: corte.nombre, precio: corte.precio, stock: corte.stock });
+};
 
 
 
@@ -152,9 +203,60 @@ En lenguaje coloquial, esa línea le dice a React: "Creá una lista nueva, volc�
           ) : (
             <ul>
               {listaCortes.map((producto) => (
-                <li key={producto.id}>
-                  <strong>{producto.nombre}</strong> - ${producto.precio} /Kg (Stock: {producto.stock})
-                </li>
+                <li key={producto.id} style={{ marginBottom: '15px' }}>
+  {idEnEdicion === producto.id ? (
+    // === MODO EDICIÓN (Casilleros) ===
+    <div style={{ display: 'inline-block' }}>
+      <input 
+        type="text" 
+        value={datosEdicion.nombre} 
+        onChange={(e) => setDatosEdicion({ ...datosEdicion, nombre: e.target.value })} 
+        style={{ width: '120px', marginRight: '5px' }}
+      />
+      $<input 
+        type="number" 
+        value={datosEdicion.precio} 
+        onChange={(e) => setDatosEdicion({ ...datosEdicion, precio: e.target.value })} 
+        style={{ width: '70px', marginRight: '5px' }}
+      />
+      Stock: <input 
+        type="number" 
+        value={datosEdicion.stock} 
+        onChange={(e) => setDatosEdicion({ ...datosEdicion, stock: e.target.value })} 
+        style={{ width: '60px', marginRight: '10px' }}
+          />
+      <button onClick={() => guardarEdicion(producto.id)}
+      style={{ backgroundColor: '#28a745', color: 'white', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+      >
+        Guardar
+          </button>
+      <button 
+        onClick={() => setIdEnEdicion(null)} 
+        style={{ backgroundColor: '#6c757d', color: 'white', marginLeft: '5px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+      >
+        Cancelar
+      </button>
+    </div>
+  ) : (
+    // === MODO LECTURA (Texto normal) ===
+    <div style={{ display: 'inline-block' }}>
+      <strong>{producto.nombre}</strong> - ${producto.precio} /Kg (Stock: {producto.stock})
+      
+      <button 
+        onClick={() => eliminarCorte(producto.id)} 
+        style={{ backgroundColor: '#ff4d4d', color: 'white', marginLeft: '15px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+          >
+        Eliminar
+          </button>
+      <button
+        onClick={() => iniciarEdicion(producto)}
+        style={{ backgroundColor: '#00cc33', color: 'white', marginLeft: '5px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+          >
+        Editar
+          </button>
+        </div>
+          )}
+          </li>
               ))}
             </ul>
           )}
