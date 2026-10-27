@@ -45,7 +45,13 @@ function filtrarYOrdenar(cortes, texto, criterio) {
   //MODULO USUARIOS
   const [productoAComprar, setProductoAComprar] = useState(null); // producto seleccionado para el modal
   const [cantidadKg, setCantidadKg] = useState('');
+  //AVISOS (carteles temporales)
+  const [aviso, setAviso] = useState(null);
 
+  const mostrarAviso = (texto, tipo) => {
+    setAviso({ texto: texto, tipo: tipo });
+    setTimeout(() => setAviso(null), 3000);
+  };
 
   const abrirModalCompra = (producto) => {
   setProductoAComprar(producto);
@@ -173,7 +179,9 @@ function filtrarYOrdenar(cortes, texto, criterio) {
       body: JSON.stringify(nuevoProducto)
     });
 
+    
     if (respuesta.ok) {
+      
       const datos = await respuesta.json();
       const productoConId = { ...nuevoProducto, id: datos.id };
 
@@ -184,15 +192,18 @@ function filtrarYOrdenar(cortes, texto, criterio) {
       setPrecio('');
       setStock('');
       setGrupo('Otros');
+      mostrarAviso(`Producto "${nuevoProducto.nombre}" guardado correctamente`, 'exito');
     } else if (respuesta.status === 400) {
       // El backend (función ValidarCorte) encontró algún problema
       const datosError = await respuesta.json();
       alert("No se pudo guardar:\n" + datosError.errores.join("\n"));
     } else {
       console.error("Hubo un error al guardar el corte.")
+      mostrarAviso('No se pudo guardar el producto. Intentá de nuevo.', 'error'); 
     }
   } catch (error) {
     console.error("Error: Hubo un error de conexion con la API: ", error);
+    mostrarAviso('No hay conexión con el servidor.', 'error');       
   } finally {
     setGuardando(false);
   }
@@ -211,11 +222,14 @@ function filtrarYOrdenar(cortes, texto, criterio) {
         // CORRECCIÓN: Usamos las variables reales de tu estado (setListaCortes y listaCortes)
         setListaCortes(listaCortes.filter(corte => corte.id !== id));
         console.log("Corte eliminado con éxito");
+        mostrarAviso('Producto eliminado correctamente', 'exito');   
     } else {
         console.error("Error al eliminar el corte en la base de datos");
+        mostrarAviso('No se pudo eliminar el producto. Intentá de nuevo.', 'error');
     }
   } catch (error) {
     console.error("Error de conexión con el servidor:", error);
+    mostrarAviso('No hay conexión con el servidor.', 'error');  
   }
   };
 
@@ -499,6 +513,7 @@ const cortesFiltrados = filtrarYOrdenar(listaCortes, busqueda, criterioOrden);;
     );
          })
       )}
+      
     </div>
   )}
 
@@ -531,6 +546,16 @@ const cortesFiltrados = filtrarYOrdenar(listaCortes, busqueda, criterioOrden);;
           </button>
         </div>
       </div>
+    </div>
+  )}
+    {aviso && (
+    <div style={{
+      position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)',
+      zIndex: 1000, padding: '10px 24px', borderRadius: '8px', color: 'white',
+      backgroundColor: aviso.tipo === 'exito' ? '#28a745' : '#dc3545',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+    }}>
+      {aviso.texto}
     </div>
   )}
   </div>
