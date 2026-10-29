@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj": {}
+    "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\backend\\Backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj": {
+    "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
+        "projectUniqueName": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\Backend.csproj",
+        "projectPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\backend\\Backend.csproj",
         "packagesPath": "C:\\Users\\joaki\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\Backend\\obj\\",
+        "outputPath": "C:\\Users\\joaki\\OneDrive\\Documentos\\Frigorifico-Menudencias\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

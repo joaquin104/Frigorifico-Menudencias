@@ -1,0 +1,49 @@
+// ===== ARCHIVO NUEVO (Paso 2: carrito) =====
+// Funciones "puras" del carrito: RECIBEN el carrito y RETORNAN un valor.
+// No usan estado de React ni tocan la pantalla.
+// Cada ítem del carrito tiene esta forma: { id, nombre, precio, stock, kg }
+// (kg se guarda como TEXTO, igual que cantidadKg, porque viene de un <input>).
+
+// Recibe el carrito y retorna el total en pesos (un número).
+export function calcularTotal(carrito) {
+  return carrito.reduce((suma, item) => suma + item.precio * (parseFloat(item.kg) || 0), 0);
+}
+
+// Recibe el carrito y retorna una lista de errores (vacía = el pedido es válido).
+// Es el equivalente en el frontend de ValidarCorte del backend.
+export function validarCarrito(carrito) {
+  const errores = [];
+
+  if (carrito.length === 0) {
+    errores.push('El carrito está vacío.');
+    return errores;
+  }
+
+  carrito.forEach((item) => {
+    const kg = parseFloat(item.kg);
+    if (isNaN(kg) || kg <= 0) {
+      errores.push(`Ingresá una cantidad mayor a 0 para ${item.nombre}.`);
+    } else if (kg > item.stock) {
+      errores.push(`De ${item.nombre} solo hay ${item.stock} Kg disponibles.`);
+    }
+  });
+
+  return errores;
+}
+
+// Recibe el carrito y retorna el texto del pedido que se manda por WhatsApp.
+export function armarMensajePedido(carrito) {
+  const formato = { maximumFractionDigits: 2 };
+
+  const lineas = carrito.map((item) => {
+    const kg = parseFloat(item.kg);
+    const subtotal = item.precio * kg;
+    return `- ${kg} Kg de ${item.nombre} ($${item.precio}/Kg) = $${subtotal.toLocaleString('es-AR', formato)}`;
+  });
+
+  return (
+    'Hola! Quiero hacer el siguiente pedido:\n\n' +
+    lineas.join('\n') +
+    `\n\nTotal estimado: $${calcularTotal(carrito).toLocaleString('es-AR', formato)}`
+  );
+}

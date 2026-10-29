@@ -1,0 +1,86 @@
+// ===== ARCHIVO NUEVO (Paso 3: inicio del cliente) =====
+// Tres secciones: Hero, Historia y Contacto, más el componente que las junta.
+// Los datos (dirección, horarios, etc.) vienen de ../datosNegocio.js
+import {
+  NOMBRE_NEGOCIO, NUMERO_WHATSAPP, TELEFONO_VISIBLE, DIRECCION, HORARIOS, EMAIL,
+} from '../datosNegocio.js';
+
+// Estilo común de las tarjetas (colores fijos para que se vean igual en modo claro y oscuro)
+const tarjeta = { borderRadius: '12px', padding: '30px 20px', marginBottom: '25px', textAlign: 'center' };
+
+// ---------- HERO (portada) ----------
+function Hero({ onVerCatalogo }) {
+  return (
+    <section style={{ ...tarjeta, backgroundColor: '#1c1c1c', color: 'white', padding: '40px 20px' }}>
+      <img src="/logo.png" alt={`Logo ${NOMBRE_NEGOCIO}`} style={{ width: '320px', maxWidth: '90%' }} />
+      <h1 style={{ margin: '10px 0 20px', color: 'white' }}>{NOMBRE_NEGOCIO}</h1>
+      <p style={{ fontSize: '1.2em', maxWidth: '600px', margin: '0 auto 20px' }}>
+        Carnes, achuras, embutidos y menudencias frescas todos los días.
+        Armá tu pedido online y lo cerramos por WhatsApp.
+      </p>
+      <button
+        onClick={onVerCatalogo}
+        style={{ backgroundColor: '#c0392b', color: 'white', padding: '12px 28px', fontSize: '1.1em', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+      >
+        Ver catálogo
+      </button>
+    </section>
+  );
+}
+
+// ---------- HISTORIA (texto inventado de ejemplo) ----------
+function Historia() {
+  return (
+    <section style={{ ...tarjeta, backgroundColor: '#f6efe6', color: '#2b2b2b' }}>
+      <h2 style={{ color: '#2b2b2b' }}>Nuestra historia</h2>
+      <p style={{ maxWidth: '700px', margin: '0 auto 12px' }}>
+        Todo empezó en 1987, cuando Don Ernesto Ramírez abrió una pequeña carnicería de barrio con una idea
+        simple: ofrecer mercadería fresca, cortes bien trabajados y un trato de confianza con cada vecino.
+      </p>
+      <p style={{ maxWidth: '700px', margin: '0 auto 12px' }}>
+        Con los años la familia fue sumando achuras, embutidos y menudencias, y el local se transformó en
+        un frigorífico de referencia en la zona. Hoy, la tercera generación sigue atendiendo con la misma
+        dedicación del primer día.
+      </p>
+      <p style={{ maxWidth: '700px', margin: '0 auto' }}>
+        Ahora también podés armar tu pedido desde acá: elegís los productos, los kilos que necesitás
+        y lo confirmás por WhatsApp.
+      </p>
+    </section>
+  );
+}
+
+// ---------- CONTACTO ----------
+function Contacto() {
+  return (
+    <section style={{ ...tarjeta, backgroundColor: '#1c1c1c', color: 'white' }}>
+      <h2 style={{ color: 'white' }}>Contacto</h2>
+      <p><strong>Dirección:</strong> {DIRECCION}</p>
+      <p><strong>Horarios:</strong></p>
+      {HORARIOS.map((linea) => (
+        <p key={linea} style={{ margin: '2px 0' }}>{linea}</p>
+      ))}
+      <p style={{ marginTop: '15px' }}><strong>Teléfono:</strong> {TELEFONO_VISIBLE}</p>
+      <p><strong>Email:</strong> {EMAIL}</p>
+      <a
+        href={`https://wa.me/${NUMERO_WHATSAPP}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ display: 'inline-block', marginTop: '10px', backgroundColor: '#25D366', color: 'white', padding: '10px 22px', borderRadius: '8px', textDecoration: 'none' }}
+      >
+        Escribinos por WhatsApp
+      </a>
+    </section>
+  );
+}
+
+// ---------- Junta las tres secciones ----------
+export default function PaginaInicio({ onVerCatalogo }) {
+  return (
+    <div>
+      <Hero onVerCatalogo={onVerCatalogo} />
+      <Historia />
+      <Contacto />
+    </div>
+  );
+}

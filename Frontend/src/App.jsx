@@ -1,7 +1,20 @@
   import { useEffect, useState } from "react";
 
+// ===== NUEVO (Pasos 2, 3 y 4): imports de los archivos nuevos =====
+import PaginaInicio from './componentes/PaginaInicio.jsx';
+import Carrito from './componentes/Carrito.jsx';
+import { calcularTotal, validarCarrito, armarMensajePedido, formatearPesos, describirStock } from './carritoUtils.js';
+import LoginAdmin from './componentes/LoginAdmin.jsx'; // NUEVO (Paso 4)
+import { NUMERO_WHATSAPP } from './datosNegocio.js';
+// ===== FIN NUEVO =====
+
   // Grupos del catálogo, en el orden en que van a aparecer las secciones
 const GRUPOS = ['Carne Vacuna', 'Cerdo', 'Achuras', 'Embutidos', 'Menudencias', 'Otros'];
+
+// ===== NUEVO (Paso 1: /admin) =====
+// true solo si la dirección del navegador es localhost:5173/admin
+const ES_PAGINA_ADMIN = window.location.pathname === '/admin';
+// ===== FIN NUEVO =====
 
   // Recibe la lista de cortes, el texto a buscar y el criterio de orden.
 // Retorna una lista NUEVA, filtrada y ordenada. No modifica la original.
@@ -22,7 +35,8 @@ function filtrarYOrdenar(cortes, texto, criterio) {
 
   export default function App() {
 
-  const [vistaActual, setVistaActual] = useState('inicio');
+  // 🔧 MODIFICADO (Paso 1): antes era useState('inicio')
+  const [vistaActual, setVistaActual] = useState(ES_PAGINA_ADMIN ? 'login' : 'inicio');
 
   const [listaCortes, setListaCortes] = useState([]);
   const [guardando, setGuardando] = useState(false);
@@ -52,6 +66,47 @@ function filtrarYOrdenar(cortes, texto, criterio) {
     setAviso({ texto: texto, tipo: tipo });
     setTimeout(() => setAviso(null), 3000);
   };
+
+  // ===== NUEVO (Paso 2: carrito) =====
+  // Cada ítem: { id, nombre, precio, stock, kg }. Las funciones de cálculo están en carritoUtils.js
+  const [carrito, setCarrito] = useState([]);
+
+  const agregarAlCarrito = (producto) => {
+    const yaEsta = carrito.find((item) => item.id === producto.id);
+
+    if (yaEsta) {
+      // Si ya estaba en el carrito, le sumamos 1 Kg
+      setCarrito(carrito.map((item) =>
+        item.id === producto.id ? { ...item, kg: String((parseFloat(item.kg) || 0) + 1) } : item
+      ));
+      mostrarAviso(`Se sumó 1 Kg más de ${producto.nombre}`, 'exito');
+    } else {
+      setCarrito([
+        ...carrito,
+        { id: producto.id, nombre: producto.nombre, precio: producto.precio, stock: producto.stock, kg: '1' },
+      ]);
+      mostrarAviso(`${producto.nombre} agregado al carrito`, 'exito');
+    }
+  };
+
+  const cambiarKgCarrito = (id, nuevoKg) => {
+    setCarrito(carrito.map((item) => (item.id === id ? { ...item, kg: nuevoKg } : item)));
+  };
+
+  const quitarDelCarrito = (id) => {
+    setCarrito(carrito.filter((item) => item.id !== id));
+  };
+
+  const confirmarPedido = () => {
+    const errores = validarCarrito(carrito);
+    if (errores.length > 0) {
+      alert(errores.join('\n'));
+      return;
+    }
+    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(armarMensajePedido(carrito))}`;
+    window.open(url, '_blank');
+  };
+  // ===== FIN NUEVO =====
 
   const abrirModalCompra = (producto) => {
   setProductoAComprar(producto);
@@ -96,8 +151,18 @@ function filtrarYOrdenar(cortes, texto, criterio) {
 
   if (respuesta.ok) {
   const datos = await respuesta.json();
+
+  // ===== NUEVO (Paso 4) =====
+  // En /admin solo pueden entrar cuentas con rol 'admin'
+  if (ES_PAGINA_ADMIN && datos.rol !== 'admin') {
+    setErrorLogin('Esta cuenta no tiene permisos de administrador');
+    return;
+  }
+  // ===== FIN NUEVO =====
+
   setUsuarioLogueado(datos);
-  setVistaActual('inicio'); // lo mandamos al inicio ya logueado
+  // 🔧 MODIFICADO (Paso 4): antes siempre iba a 'inicio'. En /admin va directo a la lista de productos
+  setVistaActual(ES_PAGINA_ADMIN ? 'catalogo' : 'inicio');
   setNombreUsuarioInput('');
   setContrasenaInput('');
   } else {
@@ -292,272 +357,326 @@ function filtrarYOrdenar(cortes, texto, criterio) {
 
 
 // Filtra por texto y ordena. La lógica está en filtrarYOrdenar (arriba del componente)
-const cortesFiltrados = filtrarYOrdenar(listaCortes, busqueda, criterioOrden);;
+const cortesFiltrados = filtrarYOrdenar(listaCortes, busqueda, criterioOrden);
 
 
+
+// ===== NUEVO (Paso 4: diseño) =====
+// Qué pantalla se dibuja. En /admin, si no hay sesión iniciada, SIEMPRE es el login,
+// aunque vistaActual diga otra cosa. Esta línea es la que impide ver el catálogo sin iniciar sesión.
+const vista = ES_PAGINA_ADMIN && !usuarioLogueado ? 'login' : vistaActual;
+
+// Recibe el nombre de una pantalla y retorna las clases CSS del botón del menú
+// (agrega "barra__link--activo" al botón de la pantalla en la que estamos).
+const claseLink = (nombrePantalla) =>
+  vista === nombrePantalla ? 'barra__link barra__link--activo' : 'barra__link';
+// ===== FIN NUEVO =====
 
   return (
-  <div style={{ padding: '20px' }}>
+  <div className={ES_PAGINA_ADMIN ? 'sitio sitio--admin' : 'sitio'}>
 
-  <nav style={{ marginBottom: '20px', borderBottom: '2px solid #ccc', paddingBottom: '10px' }}>
-    <button onClick={() => setVistaActual('inicio')} style={{ marginRight: '10px' }}>Inicio</button>
-    <button onClick={() => setVistaActual('catalogo')} style={{ marginRight: '10px' }}>Catalogo</button>
+  {/* ===== 🔧 MODIFICADO (Paso 4: diseño) =====
+      Todo este return se rehízo: los estilos pasaron de style={{...}} a clases de estilos.css.
+      La lógica (funciones y useState de arriba) NO cambió. */}
 
-    {usuarioLogueado?.rol === 'admin' && (
-      <button onClick={() => setVistaActual('abm')} style={{ marginRight: '10px' }}>ABM</button>
-    )}
-
-    {usuarioLogueado ? (
-      <span style={{ float: 'right' }}>
-        Hola, {usuarioLogueado.nombreUsuario} ({usuarioLogueado.rol})
-        <button onClick={cerrarSesion} style={{ marginLeft: '10px' }}>Cerrar sesión</button>
-      </span>
-    ) : (
-      <button onClick={() => setVistaActual('login')} style={{ float: 'right' }}>Iniciar sesión</button>
-    )}
-  </nav>
-
-  {vistaActual === 'inicio' && (
-    <div>
-      <img src="/logo.png" alt="Logo menudencias" style={{ width: '350px', marginBottom: '5px' }}/>
-      <h2>Bienvenido al Frigorífico Menudencias</h2>
-      <p>Navegue por el menú para gestionar el sistema.</p>
-    </div>
+  {/* LOGIN: solo existe en /admin. Pantalla completa y centrada, sin menú ni catálogo. */}
+  {vista === 'login' && (
+    <LoginAdmin
+      usuario={nombreUsuarioInput}
+      contrasena={contrasenaInput}
+      onCambiarUsuario={setNombreUsuarioInput}
+      onCambiarContrasena={setContrasenaInput}
+      error={errorLogin}
+      onSubmit={manejarLogin}
+    />
   )}
 
-              {vistaActual === 'login' && (
-                <div>
-                  <h2>Iniciar sesión</h2>
-                  <form onSubmit={manejarLogin} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
-                    <label>Usuario:</label>
-                    <input
-                      type="text"
-                      value={nombreUsuarioInput}
-                      onChange={(e) => setNombreUsuarioInput(e.target.value)}
-                      style={{ marginBottom: '10px' }}
-                    />
+  {/* Todo lo demás (menú y pantallas) solo se dibuja cuando NO estamos en el login */}
+  {vista !== 'login' && (
+  <>
+  <header className={ES_PAGINA_ADMIN ? 'barra barra--admin' : 'barra'}>
+    <div className="barra__interior">
+      <button
+        className="barra__marca"
+        aria-label="Frigorífico Menudencias, ir al inicio"
+        onClick={() => setVistaActual(ES_PAGINA_ADMIN ? 'catalogo' : 'inicio')}
+      >
+        <span className="barra__logo" />
+      </button>
+      {ES_PAGINA_ADMIN && <span className="barra__rotulo">Panel de administración</span>}
 
-                    <label>Contraseña:</label>
-                    <input
-                      type="password"
-                      value={contrasenaInput}
-                      onChange={(e) => setContrasenaInput(e.target.value)}
-                      style={{ marginBottom: '15px' }}
-                    />
+      <nav className="barra__menu" aria-label="Principal">
+        {/* Menú del CLIENTE (nunca tiene "Iniciar sesión") */}
+        {!ES_PAGINA_ADMIN && (
+          <>
+            <button className={claseLink('inicio')} onClick={() => setVistaActual('inicio')}>Inicio</button>
+            <button className={claseLink('catalogo')} onClick={() => setVistaActual('catalogo')}>Catálogo</button>
+            <button className={claseLink('carrito')} onClick={() => setVistaActual('carrito')}>
+              Carrito
+              {carrito.length > 0 && <span className="barra__contador">{carrito.length}</span>}
+            </button>
+          </>
+        )}
 
-                    {errorLogin && <p style={{ color: 'red' }}>{errorLogin}</p>}
+        {/* Menú del ADMINISTRADOR (solo en /admin y con sesión iniciada) */}
+        {ES_PAGINA_ADMIN && usuarioLogueado?.rol === 'admin' && (
+          <>
+            <button className={claseLink('catalogo')} onClick={() => setVistaActual('catalogo')}>Productos</button>
+            <button className={claseLink('abm')} onClick={() => setVistaActual('abm')}>Nuevo producto</button>
+          </>
+        )}
+      </nav>
 
-                    <button type="submit">Ingresar</button>
-                  </form>
-                </div>
-              )}
-  {vistaActual === 'abm' && (
-    <div>
-      <h2>Alta de Nuevo Corte</h2>
-      <form onSubmit={guardarProducto} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
-        
-        <label>Nombre del corte:</label>
-        <input 
-          type="text" 
-          value={nombreCorte} 
-          onChange={(e) => setNombreCorte(e.target.value)} 
-          style={{ marginBottom: '10px' }}
-        />
-        
-        <label>Precio por Kg:</label>
-        <input 
-          type="number" 
-          value={precio} 
-          onChange={(e) => setPrecio(e.target.value)} 
-          style={{ marginBottom: '10px' }}
-        />
-
-        <label>Stock disponible:</label>
-        <input 
-          type="number" 
-          value={stock} 
-          onChange={(e) => setStock(e.target.value)} 
-          style={{ marginBottom: '15px' }}
-        />
-        <label>Grupo / Categoría:</label>
-                      <select
-                        value={grupo}
-                        onChange={(e) => setGrupo(e.target.value)}
-                        style={{ marginBottom: '15px' }}
-                      >
-                        <option value="Carne Vacuna">Carne Vacuna</option>
-                        <option value="Cerdo">Cerdo</option>
-                        <option value="Achuras">Achuras</option>
-                        <option value="Embutidos">Embutidos</option>
-                        <option value="Menudencias">Menudencias</option>
-                        <option value="Otros">Otros</option>
-                      </select>
-        <button type="submit">Guardar Producto</button>
-      </form>
+      {usuarioLogueado && (
+        <div className="barra__sesion">
+          <span>Hola, {usuarioLogueado.nombreUsuario}</span>
+          <button className="boton boton--contorno boton--chico" onClick={cerrarSesion}>Cerrar sesión</button>
+        </div>
+      )}
     </div>
+  </header>
+
+  <main>
+  {/* Inicio del cliente (hero, cómo pedir, historia y contacto) */}
+  {vista === 'inicio' && !ES_PAGINA_ADMIN && (
+    <PaginaInicio onVerCatalogo={() => setVistaActual('catalogo')} />
   )}
 
+  {/* Alta de producto (solo admin) */}
+  {vista === 'abm' && (
+    <section className="contenedor contenedor--angosto seccion">
+      <div className="encabezado-pagina">
+        <h2 className="titulo-pagina">Nuevo producto</h2>
+        <p className="subtitulo">Aparece en el catálogo dentro del grupo que elijas.</p>
+      </div>
+      <form onSubmit={guardarProducto} className="formulario">
 
-        {vistaActual === 'catalogo' && (
-    <div>
-      <h2>Catálogo de Productos</h2>
-      <div style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
+        <div className="campo">
+          <label htmlFor="alta-nombre">Nombre del corte</label>
           <input
+            id="alta-nombre"
             type="text"
-            placeholder="Buscar por nombre..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            style={{ flex: 1 }}
+            value={nombreCorte}
+            onChange={(e) => setNombreCorte(e.target.value)}
           />
+        </div>
 
-          <select value={criterioOrden} onChange={(e) => setCriterioOrden(e.target.value)}>
-            <option value="nombre">Ordenar: A-Z</option>
-            <option value="precio">Ordenar: Precio</option>
+        <div className="campos-fila">
+          <div className="campo">
+            <label htmlFor="alta-precio">Precio por kg ($)</label>
+            <input
+              id="alta-precio"
+              type="number"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
+            />
+          </div>
+
+          <div className="campo">
+            <label htmlFor="alta-stock">Stock (kg)</label>
+            <input
+              id="alta-stock"
+              type="number"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="campo">
+          <label htmlFor="alta-grupo">Grupo</label>
+          <select id="alta-grupo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
+            {GRUPOS.map((nombreGrupo) => (
+              <option key={nombreGrupo} value={nombreGrupo}>{nombreGrupo}</option>
+            ))}
           </select>
         </div>
-      {cortesFiltrados.length === 0 ? (
-        <p>No hay cortes registrados todavía.</p>
-      ) : (
-        
-         GRUPOS.map((nombreGrupo) => {
-    const cortesDelGrupo = cortesFiltrados.filter((corte) => corte.grupo === nombreGrupo);
 
-    if (cortesDelGrupo.length === 0) return null;
-
-    return (
-      <div key={nombreGrupo}>
-        <h3>{nombreGrupo}</h3>
-        <ul>
-          {cortesDelGrupo.map((producto) => (
-            <li key={producto.id} style={{ marginBottom: '15px' }}>
-              {idEnEdicion === producto.id ? (
-                // === MODO EDICIÓN (Casilleros) ===
-                <div style={{ display: 'inline-block' }}>
-                  <input
-                    type="text"
-                    value={datosEdicion.nombre}
-                    onChange={(e) => setDatosEdicion({ ...datosEdicion, nombre: e.target.value })}
-                    style={{ width: '120px', marginRight: '5px' }}
-                  />
-                  $<input
-                    type="number"
-                    value={datosEdicion.precio}
-                    onChange={(e) => setDatosEdicion({ ...datosEdicion, precio: e.target.value })}
-                    style={{ width: '70px', marginRight: '5px' }}
-                  />
-                  Stock: <input
-                    type="number"
-                    value={datosEdicion.stock}
-                    onChange={(e) => setDatosEdicion({ ...datosEdicion, stock: e.target.value })}
-                    style={{ width: '60px', marginRight: '10px' }}
-                  />
-                  <select
-                      value={datosEdicion.grupo}
-                      onChange={(e) => setDatosEdicion({ ...datosEdicion, grupo: e.target.value })}
-                      style={{ marginRight: '10px' }}
-                    >
-                      <option value="Carne Vacuna">Carne Vacuna</option>
-                      <option value="Cerdo">Cerdo</option>
-                      <option value="Achuras">Achuras</option>
-                      <option value="Embutidos">Embutidos</option>
-                      <option value="Menudencias">Menudencias</option>
-                      <option value="Otros">Otros</option>
-                    </select>
-                  <button onClick={() => guardarEdicion(producto.id)}
-                    style={{ backgroundColor: '#28a745', color: 'white', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    onClick={() => setIdEnEdicion(null)}
-                    style={{ backgroundColor: '#6c757d', color: 'white', marginLeft: '5px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                // === MODO LECTURA (Texto normal) ===
-                <div style={{ display: 'inline-block' }}>
-                  <strong>{producto.nombre}</strong> - ${producto.precio} /Kg (Stock: {producto.stock})
-
-
-                  <button
-                    onClick={() => abrirModalCompra(producto)}
-                    style={{ backgroundColor: '#25D366', color: 'white', marginLeft: '15px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
-                  >
-                    Comprar
-                  </button>
-
-                  {usuarioLogueado?.rol === 'admin' && (
-                    <>
-                      <button
-                        onClick={() => eliminarCorte(producto.id)}
-                        style={{ backgroundColor: '#ff4d4d', color: 'white', marginLeft: '15px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
-                      >
-                        Eliminar
-                      </button>
-                      <button
-                        onClick={() => iniciarEdicion(producto)}
-                        style={{ backgroundColor: '#00cc33', color: 'white', marginLeft: '5px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
-                      >
-                        Editar
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-        </div>
-    );
-         })
-      )}
-      
-    </div>
+        <button type="submit" disabled={guardando} className="boton boton--principal boton--bloque boton--grande">
+          {guardando ? 'Guardando…' : 'Guardar producto'}
+        </button>
+      </form>
+    </section>
   )}
 
-  {productoAComprar && (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
-    }}>
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '300px' }}>
-        <h3>Comprar {productoAComprar.nombre}</h3>
-        <p>Precio: ${productoAComprar.precio} / Kg</p>
+  {/* Carrito (cliente) */}
+  {vista === 'carrito' && (
+    <Carrito
+      carrito={carrito}
+      total={calcularTotal(carrito)}
+      onCambiarKg={cambiarKgCarrito}
+      onQuitar={quitarDelCarrito}
+      onVaciar={() => setCarrito([])}
+      onConfirmar={confirmarPedido}
+      onVerCatalogo={() => setVistaActual('catalogo')}
+    />
+  )}
 
-        <label>Cantidad (Kg):</label>
-        <input
-          type="number"
-          value={cantidadKg}
-          onChange={(e) => setCantidadKg(e.target.value)}
-          style={{ width: '100%', marginTop: '5px', marginBottom: '15px' }}
-          autoFocus
-        />
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <button onClick={cerrarModalCompra} style={{ padding: '5px 10px' }}>Cancelar</button>
-          <button
-            onClick={confirmarCompra}
-            style={{ backgroundColor: '#25D366', color: 'white', padding: '5px 10px', borderRadius: '5px', border: 'none' }}
-          >
-            Confirmar por WhatsApp
-          </button>
-        </div>
+  {/* Catálogo: para el cliente es el catálogo; para el admin es la lista "Productos" (editar y eliminar) */}
+  {vista === 'catalogo' && (
+    <section className="contenedor seccion">
+      <div className="encabezado-pagina">
+        <h2 className="titulo-pagina">{ES_PAGINA_ADMIN ? 'Productos' : 'Catálogo'}</h2>
+        <p className="subtitulo">
+          {ES_PAGINA_ADMIN
+            ? 'Editá precios y stock, o eliminá lo que ya no vendés.'
+            : 'Elegí los cortes y armá tu pedido. Los precios son por kilo.'}
+        </p>
       </div>
-    </div>
+
+      <div className="herramientas">
+        <div className="buscador">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por nombre…"
+            aria-label="Buscar por nombre"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+
+        <select className="selector" aria-label="Ordenar" value={criterioOrden} onChange={(e) => setCriterioOrden(e.target.value)}>
+          <option value="nombre">Ordenar: A-Z</option>
+          <option value="precio">Ordenar: Precio</option>
+        </select>
+      </div>
+
+      {cortesFiltrados.length === 0 ? (
+        <div className="vacio">
+          {listaCortes.length === 0
+            ? 'No hay cortes registrados todavía.'
+            : `Ningún producto coincide con “${busqueda}”. Probá con otra palabra.`}
+        </div>
+      ) : (
+        GRUPOS.map((nombreGrupo) => {
+          const cortesDelGrupo = cortesFiltrados.filter((corte) => corte.grupo === nombreGrupo);
+
+          if (cortesDelGrupo.length === 0) return null;
+
+          return (
+            <section key={nombreGrupo} className="grupo">
+              <h3 className="grupo__titulo">
+                {nombreGrupo}
+                <span className="grupo__cantidad">{cortesDelGrupo.length} {cortesDelGrupo.length === 1 ? 'producto' : 'productos'}</span>
+              </h3>
+
+              <div className="grilla">
+                {cortesDelGrupo.map((producto) => (
+                  <article key={producto.id} className={idEnEdicion === producto.id ? 'producto producto--edicion' : 'producto'}>
+                    {idEnEdicion === producto.id ? (
+                      // === MODO EDICIÓN (Casilleros) ===
+                      <>
+                        <div className="campo">
+                          <label htmlFor="editar-nombre">Nombre</label>
+                          <input
+                            id="editar-nombre"
+                            type="text"
+                            value={datosEdicion.nombre}
+                            onChange={(e) => setDatosEdicion({ ...datosEdicion, nombre: e.target.value })}
+                          />
+                        </div>
+                        <div className="campos-fila">
+                          <div className="campo">
+                            <label htmlFor="editar-precio">Precio por kg ($)</label>
+                            <input
+                              id="editar-precio"
+                              type="number"
+                              value={datosEdicion.precio}
+                              onChange={(e) => setDatosEdicion({ ...datosEdicion, precio: e.target.value })}
+                            />
+                          </div>
+                          <div className="campo">
+                            <label htmlFor="editar-stock">Stock (kg)</label>
+                            <input
+                              id="editar-stock"
+                              type="number"
+                              value={datosEdicion.stock}
+                              onChange={(e) => setDatosEdicion({ ...datosEdicion, stock: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="campo">
+                          <label htmlFor="editar-grupo">Grupo</label>
+                          <select
+                            id="editar-grupo"
+                            value={datosEdicion.grupo}
+                            onChange={(e) => setDatosEdicion({ ...datosEdicion, grupo: e.target.value })}
+                          >
+                            {GRUPOS.map((g) => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="producto__acciones">
+                          <button className="boton boton--principal" onClick={() => guardarEdicion(producto.id)}>
+                            Guardar
+                          </button>
+                          <button className="boton boton--suave" onClick={() => setIdEnEdicion(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      // === MODO LECTURA ===
+                      <>
+                        <h4 className="producto__nombre">{producto.nombre}</h4>
+                        <p className="producto__precio">
+                          <strong>${formatearPesos(producto.precio)}</strong>
+                          <span>por kg</span>
+                        </p>
+                        <p className={`stock stock--${describirStock(producto.stock).nivel}`}>
+                          {describirStock(producto.stock).texto}
+                        </p>
+
+                        <div className="producto__acciones">
+                          {/* Cliente: agregar al carrito */}
+                          {!ES_PAGINA_ADMIN && (
+                            <button
+                              className="boton boton--principal"
+                              onClick={() => agregarAlCarrito(producto)}
+                              disabled={producto.stock <= 0}
+                            >
+                              {producto.stock <= 0 ? 'Sin stock' : 'Agregar al carrito'}
+                            </button>
+                          )}
+
+                          {/* Admin: editar y eliminar */}
+                          {ES_PAGINA_ADMIN && usuarioLogueado?.rol === 'admin' && (
+                            <>
+                              <button className="boton boton--suave" onClick={() => iniciarEdicion(producto)}>
+                                Editar
+                              </button>
+                              <button className="boton boton--peligro" onClick={() => eliminarCorte(producto.id)}>
+                                Eliminar
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          );
+        })
+      )}
+    </section>
   )}
-    {aviso && (
-    <div style={{
-      position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)',
-      zIndex: 1000, padding: '10px 24px', borderRadius: '8px', color: 'white',
-      backgroundColor: aviso.tipo === 'exito' ? '#28a745' : '#dc3545',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-    }}>
+  </main>
+  </>
+  )}
+
+  {/* Cartel temporal (toast) */}
+  {aviso && (
+    <div className={`aviso ${aviso.tipo === 'exito' ? 'aviso--exito' : 'aviso--error'}`} role="status">
       {aviso.texto}
     </div>
   )}
+  {/* ===== FIN MODIFICADO (Paso 4) ===== */}
   </div>
   )
   }

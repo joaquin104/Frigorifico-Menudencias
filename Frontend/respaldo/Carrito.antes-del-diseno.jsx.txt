@@ -1,0 +1,56 @@
+// ===== ARCHIVO NUEVO (Paso 2: pantalla del carrito) =====
+// Componente "de presentación": solo dibuja lo que le llega por props.
+// La lógica (agregar, quitar, confirmar) vive en App.jsx, en el bloque marcado NUEVO.
+
+export default function Carrito({ carrito, total, onCambiarKg, onQuitar, onVaciar, onConfirmar, onVerCatalogo }) {
+  if (carrito.length === 0) {
+    return (
+      <div>
+        <h2>Mi carrito</h2>
+        <p>Tu carrito está vacío.</p>
+        <button onClick={onVerCatalogo}>Ver catálogo</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2>Mi carrito</h2>
+
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {carrito.map((item) => (
+          <li key={item.id} style={{ marginBottom: '15px' }}>
+            <strong>{item.nombre}</strong> — ${item.precio} /Kg
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={item.kg}
+              onChange={(e) => onCambiarKg(item.id, e.target.value)}
+              style={{ width: '70px', margin: '0 5px 0 15px' }}
+            />
+            Kg = ${(item.precio * (parseFloat(item.kg) || 0)).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+            <button
+              onClick={() => onQuitar(item.id)}
+              style={{ backgroundColor: '#ff4d4d', color: 'white', marginLeft: '15px', padding: '5px 10px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+            >
+              Quitar
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <h3>Total estimado: ${total.toLocaleString('es-AR', { maximumFractionDigits: 2 })}</h3>
+
+      <button
+        onClick={onConfirmar}
+        style={{ backgroundColor: '#25D366', color: 'white', padding: '8px 16px', borderRadius: '5px', border: 'none', cursor: 'pointer' }}
+      >
+        Confirmar pedido por WhatsApp
+      </button>
+      <button onClick={onVaciar} style={{ marginLeft: '10px', padding: '8px 16px' }}>
+        Vaciar carrito
+      </button>
+    </div>
+  );
+}
